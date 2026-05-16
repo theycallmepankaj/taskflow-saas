@@ -12,7 +12,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 
 const protectedRoutes = [
-  { path: '/login', element: <Login /> },
+
   { path: '/dashboard', element: <Dashboard /> },
   { path: '/tasks', element: <Tasks /> },
   { path: '/analytics', element: <Analytics /> },
