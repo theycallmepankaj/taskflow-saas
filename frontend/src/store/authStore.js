@@ -54,18 +54,23 @@ export const useAuthStore = create(
           password,
         }),
 
-      logout: () => {
-        removeToken()
-        set({
-          user: null,
-          token: null,
-          error: null,
-          isLoading: false,
-        })
-        import('./taskStore').then(({ useTaskStore }) => {
-          useTaskStore.getState().reset()
-        })
-      },
+     logout: () => {
+  removeToken()
+
+  localStorage.removeItem('taskflow_access_token')
+  localStorage.removeItem('taskflow-auth')
+
+  set({
+    user: null,
+    token: null,
+    error: null,
+    isLoading: false,
+  })
+
+  import('./taskStore').then(({ useTaskStore }) => {
+    useTaskStore.getState().reset()
+  })
+},
 
       clearError: () => set({ error: null }),
 

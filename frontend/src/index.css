@@ -9,8 +9,8 @@ body,
   padding: 0;
   width: 100%;
   min-height: 100vh;
+  background-color: #020617;
   font-family: Inter, sans-serif;
-  background: #0b1120;
 }
 
 * {

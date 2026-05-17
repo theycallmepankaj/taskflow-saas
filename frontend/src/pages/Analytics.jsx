@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import api from '../api'
+import { useState } from 'react'
 import {
   LineChart,
   Line,
@@ -27,7 +26,60 @@ import {
 const glassCard =
   'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md'
 
-// dynamic placeholders — replaced at runtime with API data
+const productivityStats = [
+  { label: 'Avg. productivity', value: '91%', change: '+6.2%', icon: TrendingUp, accent: 'cyan' },
+  { label: 'Tasks completed', value: '342', change: '+28', icon: Target, accent: 'violet' },
+  { label: 'Focus score', value: '8.4', change: '+0.6', icon: Zap, accent: 'cyan' },
+  { label: 'Completion rate', value: '87%', change: '+4%', icon: BarChart3, accent: 'violet' },
+]
+
+const weeklyLineData = [
+  { label: 'Mon', value: 72 },
+  { label: 'Tue', value: 85 },
+  { label: 'Wed', value: 78 },
+  { label: 'Thu', value: 91 },
+  { label: 'Fri', value: 88 },
+  { label: 'Sat', value: 65 },
+  { label: 'Sun', value: 94 },
+]
+
+const monthlyLineData = [
+  { label: 'Jan', value: 68 },
+  { label: 'Feb', value: 74 },
+  { label: 'Mar', value: 82 },
+  { label: 'Apr', value: 79 },
+  { label: 'May', value: 91 },
+  { label: 'Jun', value: 88 },
+  { label: 'Jul', value: 85 },
+  { label: 'Aug', value: 90 },
+  { label: 'Sep', value: 87 },
+  { label: 'Oct', value: 93 },
+  { label: 'Nov', value: 89 },
+  { label: 'Dec', value: 95 },
+]
+
+const weeklyBarData = [
+  { label: 'Mon', tasks: 12 },
+  { label: 'Tue', tasks: 18 },
+  { label: 'Wed', tasks: 14 },
+  { label: 'Thu', tasks: 22 },
+  { label: 'Fri', tasks: 19 },
+  { label: 'Sat', tasks: 8 },
+  { label: 'Sun', tasks: 6 },
+]
+
+const monthlyBarData = [
+  { label: 'W1', tasks: 48 },
+  { label: 'W2', tasks: 62 },
+  { label: 'W3', tasks: 55 },
+  { label: 'W4', tasks: 71 },
+]
+
+const pieData = [
+  { name: 'Completed', value: 62, fill: '#22d3ee' },
+  { name: 'In progress', value: 24, fill: '#a78bfa' },
+  { name: 'Overdue', value: 14, fill: '#f472b6' },
+]
 
 const PIE_COLORS = ['#22d3ee', '#a78bfa', '#f472b6']
 
@@ -102,61 +154,10 @@ function StatCard({ stat }) {
 export default function Analytics() {
   const [period, setPeriod] = useState('weekly')
 
-  const [analytics, setAnalytics] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let mounted = true
-    setLoading(true)
-    api
-      .get('/analytics')
-      .then(({ data }) => {
-        if (!mounted) return
-        setAnalytics(data)
-      })
-      .catch(() => {
-        if (!mounted) return
-        setAnalytics(null)
-      })
-      .finally(() => mounted && setLoading(false))
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  const lineData = analytics
-    ? period === 'weekly'
-      ? (analytics.weekly?.completion_trend ?? []).map((p) => ({ label: p.label, value: Math.round(p.value) }))
-      : (analytics.monthly?.completion_trend ?? []).map((p) => ({ label: p.label, value: Math.round(p.value) }))
-    : []
-
-  const barData = analytics
-    ? period === 'weekly'
-      ? (analytics.weekly?.tasks_created ?? []).map((p) => ({ label: p.label, tasks: Math.round(p.value) }))
-      : (analytics.monthly?.tasks_by_week ?? []).map((p) => ({ label: p.label, tasks: Math.round(p.value) }))
-    : []
-
+  const lineData = period === 'weekly' ? weeklyLineData : monthlyLineData
+  const barData = period === 'weekly' ? weeklyBarData : monthlyBarData
   const lineTitle = period === 'weekly' ? 'Weekly productivity' : 'Monthly productivity'
-  const barTitle = period === 'weekly' ? 'Tasks per day' : 'Tasks per week'
-
-  const productivityStats = analytics
-    ? [
-        { label: 'Avg. productivity', value: `${Math.round(analytics.productivity.completion_rate ?? 0)}%`, change: '', icon: TrendingUp, accent: 'cyan' },
-        { label: 'Tasks completed', value: String(analytics.summary.completed_tasks ?? 0), change: '', icon: Target, accent: 'violet' },
-        { label: 'Focus score', value: String(analytics.productivity.completed_this_week ?? 0), change: '', icon: Zap, accent: 'cyan' },
-        { label: 'Completion rate', value: `${Math.round(analytics.productivity.completion_rate ?? 0)}%`, change: '', icon: BarChart3, accent: 'violet' },
-      ]
-    : []
-
-  const pieData = analytics ? (analytics.status_breakdown ?? []).map((s) => ({ name: s.name, value: s.value, fill: s.status === 'completed' ? '#22d3ee' : s.status === 'inProgress' ? '#a78bfa' : '#f472b6' })) : []
-
-  const peakPoint = lineData && lineData.length ? lineData.reduce((max, cur) => (cur.value > max.value ? cur : max), lineData[0]) : null
-  const peakLabel = peakPoint ? peakPoint.label : '—'
-  const peakValue = peakPoint ? `${peakPoint.value}%` : '—'
-
-  const focusTime = analytics ? `${analytics.productivity?.completed_this_week ?? 0} hrs` : '—'
-  const streak = analytics ? (analytics.productivity?.streak ?? '—') : '—'
+  const barTitle = period === 'weekly' ? 'Tasks per day' : 'Tasks per week (May)'
 
   return (
     <div className="analytics-page space-y-6 sm:space-y-8 [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0">
@@ -215,7 +216,7 @@ export default function Analytics() {
               </p>
             </div>
             <span className="rounded-lg border border-cyan-400/20 bg-gradient-to-r from-cyan-400/10 to-violet-400/10 px-2.5 py-1 text-xs font-medium text-cyan-300">
-              Peak {peakLabel} · {peakValue}
+              Peak {period === 'weekly' ? 'Sun' : 'Dec'} · 94%
             </span>
           </div>
           <div className="h-[280px] w-full">
@@ -273,8 +274,8 @@ export default function Analytics() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {pieData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
+                  {pieData.map((entry, index) => (
+                    <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip content={<PieTooltip />} />
@@ -289,11 +290,11 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
-            {pieData.map((item) => (
+            {pieData.map((item, i) => (
               <div key={item.name} className="flex items-center gap-1.5 text-xs text-zinc-500">
                 <span
                   className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: item.fill, boxShadow: `0 0 8px ${item.fill}66` }}
+                  style={{ backgroundColor: PIE_COLORS[i], boxShadow: `0 0 8px ${PIE_COLORS[i]}66` }}
                 />
                 {item.name} ({item.value}%)
               </div>
@@ -344,9 +345,9 @@ export default function Analytics() {
             {period === 'weekly' ? 'Best day' : 'Best month'}
           </p>
           <p className="mt-2 text-lg font-semibold text-white">
-            {peakLabel}
+            {period === 'weekly' ? 'Thursday' : 'December'}
           </p>
-          <p className="mt-1 text-xs text-zinc-500">{peakValue} avg. productivity</p>
+          <p className="mt-1 text-xs text-zinc-500">91% avg. productivity</p>
         </div>
         <div className="rounded-xl border border-violet-400/20 bg-gradient-to-br from-violet-400/10 to-transparent p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-violet-400/80">

@@ -1,10 +1,8 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status
 
 from app.schemas.auth import TokenResponse
 from app.schemas.user_schema import UserCreate, UserLogin
 from app.services import auth_service
-from app.schemas.user_schema import UserResponse, UpdateUser
-from app.core.deps import get_current_user_id
 
 router = APIRouter()
 
@@ -34,21 +32,3 @@ async def register(payload: UserCreate) -> TokenResponse:
 )
 async def login(payload: UserLogin) -> TokenResponse:
     return await auth_service.login_user(payload)
-
-
-@router.get(
-    "/me",
-    response_model=UserResponse,
-    summary="Get current user profile",
-)
-async def get_me(user_id: str = Depends(get_current_user_id)) -> UserResponse:
-    return await auth_service.get_user_by_id(user_id)
-
-
-@router.patch(
-    "/me",
-    response_model=UserResponse,
-    summary="Update current user profile",
-)
-async def patch_me(payload: UpdateUser, user_id: str = Depends(get_current_user_id)) -> UserResponse:
-    return await auth_service.update_user(user_id, payload.model_dump(exclude_none=True))

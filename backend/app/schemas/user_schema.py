@@ -65,28 +65,3 @@ class UserResponse(BaseModel):
     name: str
     email: EmailStr
     created_at: datetime | None = None
-    role: str | None = None
-    location: str | None = None
-    bio: str | None = None
-    profile_image: str | None = None
-
-
-class UpdateUser(BaseModel):
-    """Payload for updating the current user's public profile."""
-
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    name: str | None = Field(default=None, min_length=1, max_length=100)
-    role: str | None = Field(default=None, max_length=128)
-    location: str | None = Field(default=None, max_length=256)
-    bio: str | None = Field(default=None, max_length=2000)
-    profile_image: str | None = Field(default=None, max_length=2048)
-
-    @field_validator('name')
-    @classmethod
-    def validate_name(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        if not value.strip():
-            raise ValueError('Name cannot be empty')
-        return value.strip()

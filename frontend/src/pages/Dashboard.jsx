@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
 import {
   LineChart,
   Line,
@@ -38,15 +37,41 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
 }
 
-import api from '../api'
-import { useTaskStore } from '../store'
+const stats = [
+  { label: 'Tasks completed', value: '128', change: '+12%', icon: CheckCircle2, accent: 'cyan' },
+  { label: 'Productivity score', value: '94%', change: '+8%', icon: TrendingUp, accent: 'violet' },
+  { label: 'Focus hours', value: '32.5h', change: '+4.2h', icon: Clock, accent: 'cyan' },
+  { label: 'Goals on track', value: '7/9', change: '2 due', icon: Target, accent: 'violet' },
+]
 
-// dynamic placeholders (will be populated from API)
-const initialStats = [
-  { label: 'Tasks completed', value: '—', change: '', icon: CheckCircle2, accent: 'cyan' },
-  { label: 'Productivity score', value: '—', change: '', icon: TrendingUp, accent: 'violet' },
-  { label: 'Focus hours', value: '—', change: '', icon: Clock, accent: 'cyan' },
-  { label: 'Goals on track', value: '—', change: '', icon: Target, accent: 'violet' },
+const productivityData = [
+  { day: 'Mon', score: 72 },
+  { day: 'Tue', score: 85 },
+  { day: 'Wed', score: 78 },
+  { day: 'Thu', score: 91 },
+  { day: 'Fri', score: 88 },
+  { day: 'Sat', score: 65 },
+  { day: 'Sun', score: 94 },
+]
+
+const completionData = [
+  { name: 'Done', value: 68, fill: '#22d3ee' },
+  { name: 'In progress', value: 22, fill: '#a78bfa' },
+  { name: 'Pending', value: 10, fill: '#3f3f46' },
+]
+
+const recentActivity = [
+  { id: 1, action: 'Completed', task: 'Design system audit', time: '2 min ago', color: 'text-cyan-400' },
+  { id: 2, action: 'Commented on', task: 'Sprint planning doc', time: '18 min ago', color: 'text-violet-400' },
+  { id: 3, action: 'Assigned', task: 'API integration review', time: '1 hr ago', color: 'text-cyan-400' },
+  { id: 4, action: 'Updated', task: 'Q2 roadmap milestones', time: '3 hrs ago', color: 'text-violet-400' },
+]
+
+const upcomingTasks = [
+  { id: 1, title: 'Review Q2 roadmap', due: 'Today, 4:00 PM', priority: 'High', priorityClass: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300' },
+  { id: 2, title: 'Sync with design team', due: 'Tomorrow, 10:00 AM', priority: 'Medium', priorityClass: 'border-violet-400/30 bg-violet-400/10 text-violet-300' },
+  { id: 3, title: 'Ship analytics v2', due: 'Fri, Mar 20', priority: 'High', priorityClass: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300' },
+  { id: 4, title: 'Update documentation', due: 'Mon, Mar 23', priority: 'Low', priorityClass: 'border-white/10 bg-white/[0.04] text-zinc-400' },
 ]
 
 function ChartTooltip({ active, payload, label }) {
@@ -70,91 +95,6 @@ function BarTooltip({ active, payload }) {
 }
 
 export default function Dashboard() {
-  const fetchTasks = useTaskStore((s) => s.fetchTasks)
-  const tasks = useTaskStore((s) => s.tasks)
-
-  const [stats, setStats] = useState(initialStats)
-  const [productivityData, setProductivityData] = useState([])
-  const [completionData, setCompletionData] = useState([])
-  const [recentActivity, setRecentActivity] = useState([])
-  const [upcomingTasks, setUpcomingTasks] = useState([])
-
-  useEffect(() => {
-    let mounted = true
-
-    async function load() {
-      try {
-        // fetch tasks (updates task store)
-        await fetchTasks({ silent: true })
-
-        // fetch analytics
-        const { data } = await api.get('/analytics')
-
-        if (!mounted) return
-
-        const total = data.summary.total_tasks || 0
-
-        setStats([
-          { label: 'Tasks completed', value: String(data.summary.completed_tasks || 0), change: '', icon: CheckCircle2, accent: 'cyan' },
-          { label: 'Productivity score', value: `${Math.round(data.productivity.completion_rate) || 0}%`, change: '', icon: TrendingUp, accent: 'violet' },
-          { label: 'Completed (week)', value: String(data.productivity.completed_this_week || 0), change: '', icon: Clock, accent: 'cyan' },
-          { label: 'Goals on track', value: `${data.summary.completed_tasks || 0}/${total}`, change: '', icon: Target, accent: 'violet' },
-        ])
-
-        setProductivityData(
-          (data.weekly?.completion_trend ?? []).map((p) => ({ day: p.label, score: Math.round(p.value) }))
-        )
-
-        setCompletionData(
-          (data.status_breakdown ?? []).map((s) => ({ name: s.name, value: total ? Math.round((s.value / total) * 100) : 0, fill: s.status === 'completed' ? '#22d3ee' : s.status === 'inProgress' ? '#a78bfa' : '#3f3f46' }))
-        )
-
-        // derive recent activity and upcoming tasks from tasks list
-        const recent = [...tasks]
-          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-          .slice(0, 6)
-          .map((t) => ({
-            id: t.id,
-            action: t.status === 'completed' ? 'Completed' : 'Updated',
-            task: t.title,
-            time: new Date(t.updated_at).toLocaleString(),
-            color: t.status === 'completed' ? 'text-cyan-400' : 'text-violet-400',
-          }))
-
-        setRecentActivity(recent)
-
-        const upcoming = [...tasks]
-          .filter((t) => t.due_date)
-          .map((t) => ({ ...t, dueDateObj: new Date(t.due_date) }))
-          .filter((t) => !isNaN(t.dueDateObj.getTime()) && t.dueDateObj >= new Date())
-          .sort((a, b) => a.dueDateObj - b.dueDateObj)
-          .slice(0, 6)
-          .map((t) => ({
-            id: t.id,
-            title: t.title,
-            due: t.due_date,
-            priority: t.priority,
-            priorityClass:
-              t.priority === 'High'
-                ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300'
-                : t.priority === 'Medium'
-                ? 'border-violet-400/30 bg-violet-400/10 text-violet-300'
-                : 'border-white/10 bg-white/[0.04] text-zinc-400',
-          }))
-
-        setUpcomingTasks(upcoming)
-      } catch (e) {
-        // swallow errors for now — keep UI usable
-        // console.error('dashboard load', e)
-      }
-    }
-
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [fetchTasks])
-
   return (
     <motion.div
       variants={containerVariants}

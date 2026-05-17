@@ -25,9 +25,6 @@ class UserModel(BaseModel):
         max_length=2048,
         description="URL or path to the user's profile image.",
     )
-    role: str | None = Field(default=None, max_length=128)
-    location: str | None = Field(default=None, max_length=256)
-    bio: str | None = Field(default=None, max_length=2000)
     created_at: datetime
     updated_at: datetime
 
@@ -43,9 +40,6 @@ class UserModel(BaseModel):
         email: str,
         hashed_password: str,
         profile_image: str | None = None,
-        role: str | None = None,
-        location: str | None = None,
-        bio: str | None = None,
     ) -> Self:
         """Build a new user document with UTC timestamps."""
         now = datetime.now(timezone.utc)
@@ -54,9 +48,6 @@ class UserModel(BaseModel):
             email=email.strip().lower(),
             hashed_password=hashed_password,
             profile_image=profile_image,
-            role=role,
-            location=location,
-            bio=bio,
             created_at=now,
             updated_at=now,
         )

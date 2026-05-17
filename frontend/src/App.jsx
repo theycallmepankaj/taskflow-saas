@@ -12,7 +12,6 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 
 const protectedRoutes = [
-
   { path: '/dashboard', element: <Dashboard /> },
   { path: '/tasks', element: <Tasks /> },
   { path: '/analytics', element: <Analytics /> },
@@ -26,7 +25,6 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Protected — Dashboard, Tasks, Analytics, Profile, Settings */}

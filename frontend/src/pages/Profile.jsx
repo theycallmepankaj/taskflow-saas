@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react'
-import api from '../api'
-import { useAuthStore, useTaskStore } from '../store'
+import { useState } from 'react'
 import {
   Mail,
   MapPin,
@@ -18,64 +16,32 @@ import {
 const glassCard =
   'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md'
 
-// dynamic placeholders
+const activityStats = [
+  { label: 'Tasks completed', value: '128', icon: CheckCircle2, accent: 'cyan' },
+  { label: 'Active projects', value: '12', icon: Briefcase, accent: 'violet' },
+  { label: 'Day streak', value: '14', icon: Flame, accent: 'cyan' },
+  { label: 'Focus hours', value: '86h', icon: Clock, accent: 'violet' },
+]
+
+const recentActivity = [
+  { action: 'Completed', item: 'API integration review', time: '2 hours ago' },
+  { action: 'Updated', item: 'Q2 roadmap', time: 'Yesterday' },
+  { action: 'Joined', item: 'Design team workspace', time: '3 days ago' },
+]
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false)
-  const authUser = useAuthStore((s) => s.user)
-  const setAuthUser = useAuthStore((s) => s.setUser)
-  const fetchTasks = useTaskStore((s) => s.fetchTasks)
-  const tasks = useTaskStore((s) => s.tasks)
+  const [profile, setProfile] = useState({
+    name: 'Alex Morgan',
+    role: 'Product Designer',
+    email: 'alex@taskflow.app',
+    location: 'San Francisco, CA',
+    joined: 'March 2024',
+    bio: 'Building thoughtful product experiences. Passionate about design systems, productivity workflows, and shipping fast.',
+  })
+  const [draft, setDraft] = useState(profile)
 
-  const [profile, setProfile] = useState(null)
-  const [draft, setDraft] = useState(null)
-  const [activityStats, setActivityStats] = useState([])
-  const [recentActivity, setRecentActivity] = useState([])
-
-  useEffect(() => {
-    let mounted = true
-
-    async function load() {
-      try {
-        // fetch current user profile
-        const { data: user } = await api.get('/auth/me')
-        if (!mounted) return
-        setProfile(user)
-        setDraft(user)
-        setAuthUser(user)
-
-        // fetch tasks to drive recent activity
-        const fetched = await fetchTasks({ silent: true })
-
-        // derive recent activity from fetched tasks
-        const recent = [...(fetched ?? [])]
-          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-          .slice(0, 6)
-          .map((t) => ({ action: t.status === 'completed' ? 'Completed' : 'Updated', item: t.title, time: new Date(t.updated_at).toLocaleString() }))
-        if (mounted) setRecentActivity(recent)
-
-        // fetch analytics summary to populate activity stats
-        const { data: analytics } = await api.get('/analytics')
-        if (!mounted) return
-        const total = analytics.summary.total_tasks || 0
-        setActivityStats([
-          { label: 'Tasks completed', value: String(analytics.summary.completed_tasks || 0), icon: CheckCircle2, accent: 'cyan' },
-          { label: 'Active projects', value: String(0), icon: Briefcase, accent: 'violet' },
-          { label: 'Day streak', value: String(0), icon: Flame, accent: 'cyan' },
-          { label: 'Focus hours', value: String(analytics.productivity.completed_this_week || 0) + 'h', icon: Clock, accent: 'violet' },
-        ])
-      } catch (e) {
-        // ignore and allow UI to render minimal state
-      }
-    }
-
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [fetchTasks, setAuthUser, tasks])
-
-  const initials = (profile?.name ?? authUser?.name ?? 'U')
+  const initials = profile.name
     .split(' ')
     .map((n) => n[0])
     .join('')
@@ -92,23 +58,12 @@ export default function Profile() {
     setIsEditing(false)
   }
 
-  const saveEdit = async () => {
-    try {
-      const { data } = await api.patch('/auth/me', draft)
-      setProfile(data)
-      setDraft(data)
-      setAuthUser(data)
-      setIsEditing(false)
-    } catch (e) {
-      // TODO: show error toast
-    }
+  const saveEdit = () => {
+    setProfile(draft)
+    setIsEditing(false)
   }
 
-  const display = isEditing ? draft ?? {} : profile ?? authUser ?? {}
-
-  if (!profile && !authUser) {
-    return <div className="text-sm text-zinc-400">Loading profile…</div>
-  }
+  const display = isEditing ? draft : profile
 
   return (
     <div className="profile-page space-y-6 sm:space-y-8 [&_h1]:m-0 [&_h2]:m-0 [&_h3]:m-0">
@@ -181,7 +136,7 @@ export default function Profile() {
               </span>
               <span className="flex items-center gap-2.5">
                 <Calendar className="h-4 w-4 shrink-0 text-zinc-600" strokeWidth={1.75} />
-                Joined {display.created_at ? new Date(display.created_at).toLocaleDateString() : ''}
+                Joined {display.joined}
               </span>
             </div>
 

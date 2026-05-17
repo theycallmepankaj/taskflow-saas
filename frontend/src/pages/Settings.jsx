@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../store/authStore'
 import {
   User,
   Bell,
@@ -9,7 +11,7 @@ import {
   Smartphone,
   Lock,
   KeyRound,
-  Trash2,
+  LogOut,
   ChevronRight,
 } from 'lucide-react'
 
@@ -31,16 +33,14 @@ function Toggle({ enabled, onChange, label, description }) {
         role="switch"
         aria-checked={enabled}
         onClick={() => onChange(!enabled)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-all duration-200 ${
-          enabled
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-all duration-200 ${enabled
             ? 'bg-gradient-to-r from-cyan-400 to-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.4)]'
             : 'bg-zinc-700/80'
-        }`}
+          }`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${
-            enabled ? 'translate-x-5' : 'translate-x-0'
-          }`}
+          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${enabled ? 'translate-x-5' : 'translate-x-0'
+            }`}
         />
       </button>
     </div>
@@ -73,6 +73,16 @@ function SettingsCard({ children, className = '' }) {
 }
 
 export default function Settings() {
+
+  const navigate = useNavigate()
+
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   const [darkMode, setDarkMode] = useState(true)
   const [account, setAccount] = useState({
     displayName: 'Alex Morgan',
@@ -94,6 +104,7 @@ export default function Settings() {
   const updateNotification = (key) => {
     setNotifications((prev) => ({ ...prev, [key]: !prev[key] }))
   }
+
 
   return (
     <div className="settings-page space-y-6 sm:space-y-8 [&_h1]:m-0 [&_h2]:m-0">
@@ -127,21 +138,19 @@ export default function Settings() {
             />
             <div className="mt-4 flex gap-3">
               <div
-                className={`flex flex-1 flex-col items-center rounded-xl border p-4 transition-all duration-200 ${
-                  darkMode
+                className={`flex flex-1 flex-col items-center rounded-xl border p-4 transition-all duration-200 ${darkMode
                     ? 'border-cyan-400/40 bg-cyan-400/10 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
                     : 'border-white/[0.08] bg-white/[0.03] opacity-60'
-                }`}
+                  }`}
               >
                 <div className="h-16 w-full rounded-lg bg-[#050508] ring-1 ring-white/10" />
                 <p className="mt-2 text-xs font-medium text-white">Dark</p>
               </div>
               <div
-                className={`flex flex-1 flex-col items-center rounded-xl border p-4 transition-all duration-200 ${
-                  !darkMode
+                className={`flex flex-1 flex-col items-center rounded-xl border p-4 transition-all duration-200 ${!darkMode
                     ? 'border-cyan-400/40 bg-cyan-400/10'
                     : 'border-white/[0.08] bg-white/[0.03] opacity-60'
-                }`}
+                  }`}
               >
                 <div className="h-16 w-full rounded-lg bg-zinc-100 ring-1 ring-zinc-300" />
                 <p className="mt-2 text-xs font-medium text-white">Light</p>
@@ -320,20 +329,26 @@ export default function Settings() {
               </button>
             </div>
           </div>
-          <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/[0.06] p-4 sm:p-5">
+
+          <div className="mt-6 rounded-xl border border-orange-500/20 bg-orange-500/[0.06] p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-red-300">Delete account</p>
+                <p className="text-sm font-medium text-orange-300">
+                  Logout session
+                </p>
+
                 <p className="mt-1 text-xs text-zinc-500">
-                  Permanently remove your account and all associated data.
+                  Sign out from your current account securely.
                 </p>
               </div>
+
               <button
                 type="button"
-                className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20"
+                onClick={handleLogout}
+                className="flex shrink-0 items-center justify-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-2.5 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-500/20"
               >
-                <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                Delete account
+                <LogOut className="h-4 w-4" strokeWidth={1.75} />
+                Logout
               </button>
             </div>
           </div>

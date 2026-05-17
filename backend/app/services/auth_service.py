@@ -21,42 +21,7 @@ def _user_to_response(user: dict[str, Any] | UserModel) -> UserResponse:
         name=model.name,
         email=model.email,
         created_at=model.created_at,
-        role=getattr(model, 'role', None),
-        location=getattr(model, 'location', None),
-        bio=getattr(model, 'bio', None),
-        profile_image=getattr(model, 'profile_image', None),
     )
-
-
-async def get_user_by_id(user_id: str) -> UserResponse:
-    db = get_db()
-    from bson import ObjectId
-
-    doc = await db[USERS_COLLECTION].find_one({"_id": ObjectId(user_id)})
-    if not doc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return _user_to_response(doc)
-
-
-async def update_user(user_id: str, payload: dict[str, Any]) -> UserResponse:
-    db = get_db()
-    from bson import ObjectId
-    from pymongo import ReturnDocument
-    from datetime import datetime, timezone
-
-    # Only allow updating public profile fields
-    allowed = {k: v for k, v in payload.items() if k in {"name", "role", "location", "bio", "profile_image"} and v is not None}
-    if not allowed:
-        # nothing to update; return current
-        return await get_user_by_id(user_id)
-
-    allowed["updated_at"] = datetime.now(timezone.utc)
-    result = await db[USERS_COLLECTION].find_one_and_update(
-        {"_id": ObjectId(user_id)}, {"$set": allowed}, return_document=ReturnDocument.AFTER
-    )
-    if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return _user_to_response(result)
 
 
 def _build_token_response(user: dict[str, Any] | UserModel) -> TokenResponse:
