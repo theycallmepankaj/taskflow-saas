@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -20,6 +20,7 @@ class UserModel(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
     hashed_password: str = Field(..., min_length=1)
+    role: Literal["admin", "tasker"] = "tasker"
     profile_image: str | None = Field(
         default=None,
         max_length=2048,
@@ -40,6 +41,7 @@ class UserModel(BaseModel):
         email: str,
         hashed_password: str,
         profile_image: str | None = None,
+        role: Literal["admin", "tasker"] = "tasker",
     ) -> Self:
         """Build a new user document with UTC timestamps."""
         now = datetime.now(timezone.utc)
@@ -48,6 +50,7 @@ class UserModel(BaseModel):
             email=email.strip().lower(),
             hashed_password=hashed_password,
             profile_image=profile_image,
+            role=role,
             created_at=now,
             updated_at=now,
         )

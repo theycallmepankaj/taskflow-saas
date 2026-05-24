@@ -101,7 +101,7 @@ def _to_count_series(keys: list[tuple[str, str]], counts: dict[str, int]) -> lis
 
 async def _status_counts(db, user_oid: ObjectId) -> dict[str, int]:
     pipeline = [
-        {"$match": {"user_id": user_oid}},
+        {"$match": {"$or": [{"user_id": user_oid}, {"assigned_to": user_oid}]}},
         {"$group": {"_id": "$status", "count": {"$sum": 1}}},
     ]
     rows = await db[TASKS_COLLECTION].aggregate(pipeline).to_list(length=None)
@@ -112,7 +112,7 @@ async def _count_completed_since(db, user_oid: ObjectId, since: datetime) -> int
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "status": "completed",
                 "updated_at": {"$gte": since},
             }
@@ -127,7 +127,7 @@ async def _count_overdue(db, user_oid: ObjectId, today: date) -> int:
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "status": {"$ne": "completed"},
                 "due_date": {"$lt": today.isoformat()},
             }
@@ -140,7 +140,7 @@ async def _count_overdue(db, user_oid: ObjectId, today: date) -> int:
 
 async def _daily_created_counts(db, user_oid: ObjectId, since: datetime) -> dict[str, int]:
     pipeline = [
-        {"$match": {"user_id": user_oid, "created_at": {"$gte": since}}},
+        {"$match": {"$or": [{"user_id": user_oid}, {"assigned_to": user_oid}], "created_at": {"$gte": since}}},
         {
             "$group": {
                 "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
@@ -156,7 +156,7 @@ async def _daily_completed_counts(db, user_oid: ObjectId, since: datetime) -> di
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "status": "completed",
                 "updated_at": {"$gte": since},
             }
@@ -176,7 +176,7 @@ async def _monthly_completed_counts(db, user_oid: ObjectId, since: datetime) -> 
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "status": "completed",
                 "updated_at": {"$gte": since},
             }
@@ -197,7 +197,7 @@ async def _weekly_tasks_in_month(db, user_oid: ObjectId, month_start: datetime) 
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "created_at": {"$gte": month_start, "$lt": next_month},
             }
         },
@@ -309,7 +309,7 @@ async def _count_high_priority_pending(db, user_oid: ObjectId) -> int:
     pipeline = [
         {
             "$match": {
-                "user_id": user_oid,
+                "$or": [{"user_id": user_oid}, {"assigned_to": user_oid}],
                 "status": {"$ne": "completed"},
                 "priority": "High",
             }

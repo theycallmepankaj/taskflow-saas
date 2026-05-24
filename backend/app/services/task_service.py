@@ -27,6 +27,7 @@ def task_to_response(task: dict | TaskModel) -> TaskResponse:
         status=model.status,
         priority=model.priority,
         due_date=model.due_date,
+        assigned_to=str(model.assigned_to) if model.assigned_to else None,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -34,6 +35,9 @@ def task_to_response(task: dict | TaskModel) -> TaskResponse:
 
 async def create_task(user_id: str, payload: CreateTask) -> TaskResponse:
     db = get_db()
+    assigned_to_oid = None
+    if payload.assigned_to:
+        assigned_to_oid = _parse_object_id(payload.assigned_to, not_found_detail="Invalid assignee")
 
     task = TaskModel.new(
         user_id=_parse_object_id(user_id, not_found_detail="Invalid user"),
@@ -42,6 +46,7 @@ async def create_task(user_id: str, payload: CreateTask) -> TaskResponse:
         status=payload.status,
         priority=payload.priority,
         due_date=payload.due_date,
+        assigned_to=assigned_to_oid,
     )
 
     result = await db[TASKS_COLLECTION].insert_one(task.to_mongo())
@@ -53,7 +58,12 @@ async def get_tasks(user_id: str) -> list[TaskResponse]:
     db = get_db()
     user_oid = _parse_object_id(user_id, not_found_detail="Invalid user")
 
-    cursor = db[TASKS_COLLECTION].find({"user_id": user_oid}).sort("created_at", -1)
+    cursor = db[TASKS_COLLECTION].find({
+        "$or": [
+            {"user_id": user_oid},
+            {"assigned_to": user_oid}
+        ]
+    }).sort("created_at", -1)
     tasks = await cursor.to_list(length=None)
     return [task_to_response(TaskModel.from_mongo(task)) for task in tasks]
 
@@ -68,10 +78,14 @@ async def update_task(user_id: str, task_id: str, payload: UpdateTask) -> TaskRe
             detail="No fields provided to update",
         )
 
+    user_oid = _parse_object_id(user_id, not_found_detail="Invalid user")
     result = await db[TASKS_COLLECTION].find_one_and_update(
         {
             "_id": _parse_object_id(task_id),
-            "user_id": _parse_object_id(user_id, not_found_detail="Invalid user"),
+            "$or": [
+                {"user_id": user_oid},
+                {"assigned_to": user_oid}
+            ]
         },
         {"$set": updates},
         return_document=ReturnDocument.AFTER,
@@ -88,11 +102,15 @@ async def update_task(user_id: str, task_id: str, payload: UpdateTask) -> TaskRe
 
 async def delete_task(user_id: str, task_id: str) -> None:
     db = get_db()
+    user_oid = _parse_object_id(user_id, not_found_detail="Invalid user")
 
     result = await db[TASKS_COLLECTION].delete_one(
         {
             "_id": _parse_object_id(task_id),
-            "user_id": _parse_object_id(user_id, not_found_detail="Invalid user"),
+            "$or": [
+                {"user_id": user_oid},
+                {"assigned_to": user_oid}
+            ]
         }
     )
 

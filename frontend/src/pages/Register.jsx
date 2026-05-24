@@ -17,6 +17,7 @@ import {
   selectAuthHydrated,
   selectAuthLoading,
   selectAuthToken,
+  selectAuthUser,
   useAuthStore,
 } from '../store'
 import { validateRegisterForm } from '../utils/validateRegister'
@@ -29,28 +30,30 @@ const inputErrorClass = 'border-red-400/40 focus:border-red-400/50'
 export default function Register() {
   const navigate = useNavigate()
   const location = useLocation()
-  const redirectTo = location.state?.from || '/dashboard'
 
   const register = useAuthStore((state) => state.register)
   const clearError = useAuthStore((state) => state.clearError)
   const isLoading = useAuthStore(selectAuthLoading)
   const storeError = useAuthStore(selectAuthError)
   const token = useAuthStore(selectAuthToken)
+  const user = useAuthStore(selectAuthUser)
   const hasHydrated = useAuthStore(selectAuthHydrated)
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [role, setRole] = useState('tasker')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
 
   useEffect(() => {
-    if (hasHydrated && token) {
-      navigate(redirectTo, { replace: true })
+    if (hasHydrated && token && user) {
+      const dest = location.state?.from || (user.role === 'admin' ? '/admin/dashboard' : '/tasker/dashboard')
+      navigate(dest, { replace: true })
     }
-  }, [hasHydrated, token, navigate, redirectTo])
+  }, [hasHydrated, token, user, navigate, location])
 
   const clearFieldError = (field) => {
     setFieldErrors((prev) => {
@@ -78,9 +81,10 @@ export default function Register() {
     clearError()
 
     try {
-      const data = await register({ name, email, password })
+      const data = await register({ name, email, password, role })
       toast.success(`Account created${data.user?.name ? `, ${data.user.name}` : ''}!`)
-      navigate(redirectTo, { replace: true })
+      const dest = location.state?.from || (data.user?.role === 'admin' ? '/admin/dashboard' : '/tasker/dashboard')
+      navigate(dest, { replace: true })
     } catch {
       const message =
         useAuthStore.getState().error ?? 'Registration failed. Please try again.'
@@ -205,6 +209,28 @@ export default function Register() {
                     {fieldErrors.email}
                   </p>
                 )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="role"
+                  className="text-xs font-medium uppercase tracking-wider text-zinc-500"
+                >
+                  Role
+                </label>
+                <div className="group/field relative">
+                  <select
+                    id="role"
+                    name="role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    disabled={isLoading}
+                    className={`${inputClass} px-4 py-3 appearance-none bg-[#09090e] border border-white/[0.08] cursor-pointer`}
+                  >
+                    <option value="tasker" className="bg-[#0c0c12] text-white">Tasker</option>
+                    <option value="admin" className="bg-[#0c0c12] text-white">Admin</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">

@@ -20,13 +20,14 @@ def _user_to_response(user: dict[str, Any] | UserModel) -> UserResponse:
         id=str(model.id),
         name=model.name,
         email=model.email,
+        role=model.role,
         created_at=model.created_at,
     )
 
 
 def _build_token_response(user: dict[str, Any] | UserModel) -> TokenResponse:
     model = user if isinstance(user, UserModel) else UserModel.from_mongo(user)
-    token = create_access_token(subject=str(model.id), email=str(model.email))
+    token = create_access_token(subject=str(model.id), email=str(model.email), role=str(model.role))
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -49,6 +50,7 @@ async def register_user(payload: UserCreate) -> TokenResponse:
         name=payload.name,
         email=email,
         hashed_password=hash_password(payload.password),
+        role=payload.role,
     )
 
     try:

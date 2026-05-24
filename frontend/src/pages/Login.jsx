@@ -17,6 +17,7 @@ import {
   selectAuthHydrated,
   selectAuthLoading,
   selectAuthToken,
+  selectAuthUser,
   useAuthStore,
 } from '../store'
 import { validateLoginForm } from '../utils/validateLogin'
@@ -29,13 +30,13 @@ const inputErrorClass = 'border-red-400/40 focus:border-red-400/50'
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
-  const redirectTo = location.state?.from || '/dashboard'
 
   const login = useAuthStore((state) => state.login)
   const clearError = useAuthStore((state) => state.clearError)
   const isLoading = useAuthStore(selectAuthLoading)
   const storeError = useAuthStore(selectAuthError)
   const token = useAuthStore(selectAuthToken)
+  const user = useAuthStore(selectAuthUser)
   const hasHydrated = useAuthStore(selectAuthHydrated)
 
   const [showPassword, setShowPassword] = useState(false)
@@ -45,10 +46,11 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({})
 
   useEffect(() => {
-    if (hasHydrated && token) {
-      navigate(redirectTo, { replace: true })
+    if (hasHydrated && token && user) {
+      const dest = location.state?.from || (user.role === 'admin' ? '/admin/dashboard' : '/tasker/dashboard')
+      navigate(dest, { replace: true })
     }
-  }, [hasHydrated, token, navigate, redirectTo])
+  }, [hasHydrated, token, user, navigate, location])
 
   const clearFieldError = (field) => {
     setFieldErrors((prev) => {
@@ -77,7 +79,8 @@ export default function Login() {
     try {
       const data = await login({ email, password })
       toast.success(`Welcome back${data.user?.name ? `, ${data.user.name}` : ''}!`)
-      navigate(redirectTo, { replace: true })
+      const dest = location.state?.from || (data.user?.role === 'admin' ? '/admin/dashboard' : '/tasker/dashboard')
+      navigate(dest, { replace: true })
     } catch {
       const message = useAuthStore.getState().error ?? 'Login failed. Check your credentials.'
       toast.error(message)

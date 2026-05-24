@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -17,6 +18,7 @@ class UserCreate(BaseModel):
         max_length=128,
         description="At least 8 characters with uppercase, lowercase, and a digit.",
     )
+    role: Literal["admin", "tasker"] = Field(default="tasker", description="User role in the system.")
 
     @field_validator("name")
     @classmethod
@@ -64,4 +66,5 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
+    role: Literal["admin", "tasker"] = "tasker"
     created_at: datetime | None = None

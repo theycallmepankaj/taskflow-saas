@@ -43,6 +43,7 @@ class CreateTask(BaseModel):
         description="Optional due date (YYYY-MM-DD).",
         examples=["2026-05-20"],
     )
+    assigned_to: str | None = Field(default=None, description="ID of the user assigned to this task.")
 
     @field_validator("title")
     @classmethod
@@ -78,6 +79,7 @@ class UpdateTask(BaseModel):
         default=None,
         description="Optional due date (YYYY-MM-DD).",
     )
+    assigned_to: str | None = Field(default=None, description="ID of the user assigned to this task.")
 
     @field_validator("title")
     @classmethod
@@ -114,6 +116,7 @@ class TaskResponse(BaseModel):
     status: TaskStatus
     priority: TaskPriority
     due_date: date | None = None
+    assigned_to: str | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -47,11 +47,12 @@ export const useAuthStore = create(
           password,
         }),
 
-      register: async ({ name, email, password }) =>
+      register: async ({ name, email, password, role = 'tasker' }) =>
         requestAuth(set, '/auth/register', {
           name: name.trim(),
           email: email.trim(),
           password,
+          role,
         }),
 
      logout: () => {

@@ -28,6 +28,7 @@ class TaskModel(BaseModel):
     priority: TaskPriority = "Medium"
     due_date: date | None = None
     user_id: ObjectId
+    assigned_to: ObjectId | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -53,6 +54,7 @@ class TaskModel(BaseModel):
         status: TaskStatus = "todo",
         priority: TaskPriority = "Medium",
         due_date: date | None = None,
+        assigned_to: ObjectId | None = None,
     ) -> Self:
         """Build a new task document with UTC timestamps."""
         now = datetime.now(timezone.utc)
@@ -63,6 +65,7 @@ class TaskModel(BaseModel):
             status=status,
             priority=priority,
             due_date=due_date,
+            assigned_to=assigned_to,
             created_at=now,
             updated_at=now,
         )
@@ -73,6 +76,9 @@ class TaskModel(BaseModel):
         data = dict(document)
         raw_due = data.get("due_date", data.get("due"))
         data["due_date"] = cls._read_due_date(raw_due)
+        raw_assigned = data.get("assigned_to")
+        if raw_assigned:
+            data["assigned_to"] = ObjectId(raw_assigned) if isinstance(raw_assigned, (str, ObjectId)) else None
         return cls.model_validate(data)
 
     @staticmethod
@@ -104,6 +110,12 @@ class TaskModel(BaseModel):
             payload["due_date"] = serialized_due
         else:
             payload.pop("due_date", None)
+            
+        # Ensure user_id and assigned_to are stored as ObjectIds
+        if "user_id" in payload and isinstance(payload["user_id"], str):
+            payload["user_id"] = ObjectId(payload["user_id"])
+        if "assigned_to" in payload and isinstance(payload["assigned_to"], str):
+            payload["assigned_to"] = ObjectId(payload["assigned_to"])
         return payload
 
     def touch(self) -> Self:
@@ -114,6 +126,12 @@ class TaskModel(BaseModel):
         """Return a copy with updated fields and a fresh `updated_at`."""
         if "due_date" in fields and fields["due_date"] is not None:
             fields["due_date"] = self._read_due_date(fields["due_date"])
+        if "assigned_to" in fields:
+            raw_assigned = fields["assigned_to"]
+            if raw_assigned is not None:
+                fields["assigned_to"] = ObjectId(raw_assigned) if isinstance(raw_assigned, (str, ObjectId)) else None
+            else:
+                fields["assigned_to"] = None
         data = {**fields, "updated_at": datetime.now(timezone.utc)}
         return self.model_copy(update=data)
 
@@ -126,5 +144,11 @@ class TaskModel(BaseModel):
             prepared["due_date"] = cls._serialize_due_date(
                 cls._read_due_date(raw) if raw is not None else None
             )
+        if "assigned_to" in prepared:
+            raw_assigned = prepared["assigned_to"]
+            if raw_assigned is not None:
+                prepared["assigned_to"] = ObjectId(raw_assigned) if isinstance(raw_assigned, (str, ObjectId)) else None
+            else:
+                prepared["assigned_to"] = None
         prepared["updated_at"] = datetime.now(timezone.utc)
         return prepared

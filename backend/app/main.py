@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.routes.analytics_routes import router as analytics_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.task_routes import router as task_router
+from app.routes.admin_routes import router as admin_router
 
 
 @asynccontextmanager
@@ -48,6 +49,11 @@ def create_app() -> FastAPI:
         analytics_router,
         prefix=f"{settings.API_PREFIX}/analytics",
         tags=["analytics"],
+    )
+    application.include_router(
+        admin_router,
+        prefix=f"{settings.API_PREFIX}/admin",
+        tags=["admin"],
     )
 
     @application.get("/", tags=["health"])

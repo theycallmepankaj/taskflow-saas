@@ -5,6 +5,7 @@ import {
   ListTodo,
   BarChart3,
   User,
+  Users,
   Settings,
   Sparkles,
   PanelLeftClose,
@@ -12,14 +13,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
-
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/tasks', label: 'Tasks', icon: ListTodo },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/profile', label: 'Profile', icon: User },
-  { to: '/settings', label: 'Settings', icon: Settings },
-]
+import { useAuthStore } from '../../store/authStore'
 
 const linkBase =
   'group relative flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium transition-all duration-200'
@@ -35,6 +29,23 @@ function navLinkClass({ isActive }, collapsed) {
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const user = useAuthStore((state) => state.user)
+  const role = user?.role || 'tasker'
+
+  const navItems = role === 'admin'
+    ? [
+        { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/admin/users', label: 'Users', icon: Users },
+        { to: '/admin/tasks', label: 'Tasks', icon: ListTodo },
+        { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+        { to: '/admin/settings', label: 'Settings', icon: Settings },
+      ]
+    : [
+        { to: '/tasker/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/tasker/tasks', label: 'Tasks', icon: ListTodo },
+        { to: '/tasker/profile', label: 'Profile', icon: User },
+        { to: '/tasker/settings', label: 'Settings', icon: Settings },
+      ]
 
   const closeMobile = () => setMobileOpen(false)
 

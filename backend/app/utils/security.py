@@ -22,10 +22,10 @@ def _require_jwt_secret() -> None:
         raise RuntimeError("JWT_SECRET is not configured")
 
 
-def create_access_token(subject: str, email: str) -> str:
+def create_access_token(subject: str, email: str, role: str) -> str:
     _require_jwt_secret()
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": subject, "email": email, "exp": expire}
+    payload = {"sub": subject, "email": email, "role": role, "exp": expire}
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.ALGORITHM)
 
 
