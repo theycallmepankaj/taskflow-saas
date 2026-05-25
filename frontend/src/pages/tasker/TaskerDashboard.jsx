@@ -61,6 +61,11 @@ export default function TaskerDashboard() {
   const [data, setData] = useState(null)
   const [tasks, setTasks] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -231,26 +236,30 @@ export default function TaskerDashboard() {
             </span>
           </div>
 
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weekly.completion_trend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    return (
-                      <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
-                        <p className="text-xs text-zinc-500">{payload[0].payload.label}</p>
-                        <p className="text-sm font-semibold text-cyan-300">{payload[0].value}% efficiency</p>
-                      </div>
-                    )
-                  }}
-                />
-                <Line type="monotone" dataKey="value" stroke="#22d3ee" strokeWidth={2.5} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-[280px] w-full flex items-center justify-center">
+            {mounted ? (
+              <ResponsiveContainer width="100%" height={280} minWidth={0}>
+                <LineChart data={weekly.completion_trend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                        <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+                          <p className="text-xs text-zinc-500">{payload[0].payload.label}</p>
+                          <p className="text-sm font-semibold text-cyan-300">{payload[0].value}% efficiency</p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Line type="monotone" dataKey="value" stroke="#22d3ee" strokeWidth={2.5} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full animate-pulse bg-white/[0.02] rounded-xl" />
+            )}
           </div>
         </div>
 

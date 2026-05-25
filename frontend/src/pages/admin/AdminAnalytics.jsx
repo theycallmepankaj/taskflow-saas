@@ -34,6 +34,11 @@ const PIE_COLORS = ['#22d3ee', '#a78bfa', '#fb7185']
 export default function AdminAnalytics() {
   const [stats, setStats] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     async function loadStats() {
@@ -173,28 +178,32 @@ export default function AdminAnalytics() {
             </p>
           </div>
 
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.task_activity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    return (
-                      <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md text-xs space-y-1">
-                        <p className="text-zinc-500">{payload[0].payload.label}</p>
-                        <p className="text-violet-300 font-medium">Created: {payload[0].value}</p>
-                        <p className="text-cyan-300 font-medium">Completed: {payload[1].value}</p>
-                      </div>
-                    )
-                  }}
-                />
-                <Line type="monotone" dataKey="created" stroke="#a78bfa" strokeWidth={2.5} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="completed" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-[280px] w-full flex items-center justify-center">
+            {mounted ? (
+              <ResponsiveContainer width="100%" height={280} minWidth={0}>
+                <LineChart data={stats.task_activity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                        <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md text-xs space-y-1">
+                          <p className="text-zinc-500">{payload[0].payload.label}</p>
+                          <p className="text-violet-300 font-medium">Created: {payload[0].value}</p>
+                          <p className="text-cyan-300 font-medium">Completed: {payload[1].value}</p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Line type="monotone" dataKey="created" stroke="#a78bfa" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="completed" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full animate-pulse bg-white/[0.02] rounded-xl" />
+            )}
           </div>
         </div>
 
@@ -206,40 +215,44 @@ export default function AdminAnalytics() {
           </div>
 
           <div className="h-[200px] w-full flex items-center justify-center my-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData.filter(item => item.value > 0)}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {pieData.filter(item => item.value > 0).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null
-                    return (
-                      <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
-                        <p className="text-xs text-white font-medium">{payload[0].name}</p>
-                        <p className="text-sm font-semibold text-cyan-300">{payload[0].value} tasks</p>
-                      </div>
-                    )
-                  }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={32}
-                  formatter={(value) => <span className="text-xs text-zinc-400">{value}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height={200} minWidth={0}>
+                <PieChart>
+                  <Pie
+                    data={pieData.filter(item => item.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {pieData.filter(item => item.value > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null
+                      return (
+                        <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+                          <p className="text-xs text-white font-medium">{payload[0].name}</p>
+                          <p className="text-sm font-semibold text-cyan-300">{payload[0].value} tasks</p>
+                        </div>
+                      )
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={32}
+                    formatter={(value) => <span className="text-xs text-zinc-400">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full animate-pulse bg-white/[0.02] rounded-xl" />
+            )}
           </div>
         </div>
       </div>
@@ -251,26 +264,30 @@ export default function AdminAnalytics() {
           <p className="text-xs text-zinc-500 mt-0.5">Tasks created per day</p>
         </div>
 
-        <div className="h-[240px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={stats.task_activity}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null
-                  return (
-                    <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
-                      <p className="text-xs text-zinc-500">{payload[0].payload.label}</p>
-                      <p className="text-sm font-semibold text-violet-300">{payload[0].value} tasks created</p>
-                    </div>
-                  )
-                }}
-              />
-              <Bar dataKey="created" fill="#a78bfa" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="h-[240px] w-full flex items-center justify-center">
+          {mounted ? (
+            <ResponsiveContainer width="100%" height={240} minWidth={0}>
+              <BarChart data={stats.task_activity}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11 }} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="rounded-lg border border-white/10 bg-[#0c0c12]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+                        <p className="text-xs text-zinc-500">{payload[0].payload.label}</p>
+                        <p className="text-sm font-semibold text-violet-300">{payload[0].value} tasks created</p>
+                      </div>
+                    )
+                  }}
+                />
+                <Bar dataKey="created" fill="#a78bfa" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full w-full animate-pulse bg-white/[0.02] rounded-xl" />
+          )}
         </div>
       </div>
     </div>

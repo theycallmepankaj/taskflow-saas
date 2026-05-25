@@ -12,9 +12,11 @@ import {
   Trash2,
   ListTodo,
   Loader2,
-  UserCheck
+  UserCheck,
+  User
 } from 'lucide-react'
 import api from '../../api'
+import CustomSelect from '../../components/ui/CustomSelect'
 
 const glassCard =
   'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md'
@@ -407,6 +409,31 @@ function TaskFormModal({ open, mode, initialStatus, task, taskers, onClose, onSu
     })
   }
 
+  const priorityOptions = [
+    { value: 'High', label: 'High', icon: <Flag className="h-4 w-4 text-cyan-400" /> },
+    { value: 'Medium', label: 'Medium', icon: <Flag className="h-4 w-4 text-violet-400" /> },
+    { value: 'Low', label: 'Low', icon: <Flag className="h-4 w-4 text-zinc-500" /> },
+  ]
+
+  const statusOptions = [
+    { value: 'todo', label: 'To Do', icon: <span className="h-2.5 w-2.5 rounded-full bg-zinc-500" /> },
+    { value: 'inProgress', label: 'In Progress', icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-400" /> },
+    { value: 'completed', label: 'Completed', icon: <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" /> },
+  ]
+
+  const assigneeOptions = [
+    { value: '', label: 'Unassigned', icon: <User className="h-4 w-4 text-zinc-500" /> },
+    ...taskers.map((tasker) => ({
+      value: tasker.id,
+      label: tasker.name,
+      icon: (
+        <span className="flex h-5 w-5 items-center justify-center rounded bg-cyan-500/10 text-[9px] font-bold text-cyan-300">
+          {tasker.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+        </span>
+      ),
+    })),
+  ]
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
@@ -474,31 +501,23 @@ function TaskFormModal({ open, mode, initialStatus, task, taskers, onClose, onSu
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Status
               </label>
-              <select
+              <CustomSelect
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className={inputClass}
+                onChange={setStatus}
+                options={statusOptions}
                 disabled={isSaving}
-              >
-                <option value="todo">To Do</option>
-                <option value="inProgress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Priority
               </label>
-              <select
+              <CustomSelect
                 value={priority}
-                onChange={(e) => setPriority(e.target.value)}
-                className={inputClass}
+                onChange={setPriority}
+                options={priorityOptions}
                 disabled={isSaving}
-              >
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -519,19 +538,12 @@ function TaskFormModal({ open, mode, initialStatus, task, taskers, onClose, onSu
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
                 Assign to
               </label>
-              <select
+              <CustomSelect
                 value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className={`${inputClass} bg-[#09090e]`}
+                onChange={setAssignedTo}
+                options={assigneeOptions}
                 disabled={isSaving}
-              >
-                <option value="">Unassigned</option>
-                {taskers.map((tasker) => (
-                  <option key={tasker.id} value={tasker.id}>
-                    {tasker.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           </div>
 

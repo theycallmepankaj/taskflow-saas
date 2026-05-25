@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import toast from 'react-hot-toast'
 import {
@@ -7,12 +7,21 @@ import {
   Flag,
   GripVertical,
   CheckCircle2,
-  Briefcase
+  Briefcase,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Loader2,
 } from 'lucide-react'
 import api from '../../api'
+import CustomSelect from '../../components/ui/CustomSelect'
 
 const glassCard =
   'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md'
+
+const inputClass =
+  'w-full rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition-all duration-200 hover:border-white/[0.12] focus:border-cyan-400/40 focus:shadow-[0_0_0_3px_rgba(34,211,238,0.1)]'
 
 const columns = [
   {
@@ -59,6 +68,9 @@ function formatDueDate(dueDate) {
 export default function TaskerTasks() {
   const [tasks, setTasks] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [modal, setModal] = useState({ open: false, mode: 'create', status: 'todo', task: null })
+  const [deletingId, setDeletingId] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   const loadTasks = async () => {
     try {
@@ -74,6 +86,51 @@ export default function TaskerTasks() {
   useEffect(() => {
     loadTasks()
   }, [])
+
+  const openCreateModal = useCallback((status = 'todo') => {
+    setModal({ open: true, mode: 'create', status, task: null })
+  }, [])
+
+  const openEditModal = useCallback((task) => {
+    setModal({ open: true, mode: 'edit', status: task.status, task })
+  }, [])
+
+  const closeModal = useCallback(() => {
+    setModal((prev) => ({ ...prev, open: false }))
+  }, [])
+
+  const handleModalSubmit = async (payload) => {
+    setIsSaving(true)
+    try {
+      if (modal.mode === 'edit' && modal.task) {
+        await api.patch(`/tasks/${modal.task.id}`, payload)
+        toast.success('Task updated')
+      } else {
+        await api.post('/tasks', payload)
+        toast.success('Task created')
+      }
+      await loadTasks()
+      closeModal()
+    } catch {
+      toast.error('Something went wrong saving the task')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async (task) => {
+    if (!window.confirm(`Delete "${task.title}"?`)) return
+    setDeletingId(task.id)
+    try {
+      await api.delete(`/tasks/${task.id}`)
+      toast.success('Task deleted')
+      await loadTasks()
+    } catch {
+      toast.error('Failed to delete task')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const handleMarkComplete = async (taskId) => {
     // Optimistic UI update
@@ -125,19 +182,27 @@ export default function TaskerTasks() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-400/80">
-            Work space
+            Workspace
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             My assigned tasks
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Drag cards between columns to update status, or mark them completed.
+            Drag cards between columns to update status, or manage details directly.
           </p>
         </div>
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-zinc-500">
-            <span className="font-medium text-white">{tasks.length}</span> assigned tasks
+            <span className="font-medium text-white">{tasks.length}</span> tasks total
           </p>
+          <button
+            type="button"
+            onClick={() => openCreateModal('todo')}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-300 px-4 py-2.5 text-sm font-semibold text-[#041014] shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-transform hover:scale-[1.02]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            New task
+          </button>
         </div>
       </header>
 
@@ -163,10 +228,18 @@ export default function TaskerTasks() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-400/10">
             <Briefcase className="h-7 w-7 text-cyan-300" strokeWidth={1.5} />
           </div>
-          <h2 className="mt-5 text-lg font-semibold text-white">No assignments</h2>
+          <h2 className="mt-5 text-lg font-semibold text-white">No tasks yet</h2>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
-            You do not have any tasks assigned to you right now. Take a rest!
+            You do not have any tasks yet. Create a new task to start organizing.
           </p>
+          <button
+            type="button"
+            onClick={() => openCreateModal('todo')}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-300 px-5 py-2.5 text-sm font-semibold text-[#041014] shadow-[0_0_24px_rgba(34,211,238,0.35)] transition-transform hover:scale-[1.02]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Create task
+          </button>
         </div>
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
@@ -234,22 +307,50 @@ export default function TaskerTasks() {
                                     </span>
                                   </div>
                                 </div>
-                                {column.id !== 'completed' && (
+                                <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                                  {column.id !== 'completed' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkComplete(task.id)}
+                                      className="rounded-lg p-1.5 text-zinc-500 hover:bg-cyan-400/10 hover:text-cyan-300 transition-colors"
+                                      title="Mark complete"
+                                    >
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
-                                    onClick={() => handleMarkComplete(task.id)}
-                                    className="rounded-lg p-1.5 text-zinc-500 hover:bg-cyan-400/10 hover:text-cyan-300 transition-colors"
-                                    title="Mark complete"
+                                    onClick={() => openEditModal(task)}
+                                    className="rounded-lg p-1.5 text-zinc-500 hover:bg-white/[0.06] hover:text-cyan-300"
+                                    aria-label="Edit task"
                                   >
-                                    <CheckCircle2 className="h-4 w-4" />
+                                    <Pencil className="h-3.5 w-3.5" />
                                   </button>
-                                )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(task)}
+                                    disabled={deletingId === task.id}
+                                    className="rounded-lg p-1.5 text-zinc-500 hover:bg-red-400/10 hover:text-red-300 disabled:opacity-50"
+                                    aria-label="Delete task"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
                         </Draggable>
                       ))}
                       {provided.placeholder}
+
+                      <button
+                        type="button"
+                        onClick={() => openCreateModal(column.id)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.1] py-2.5 text-sm text-zinc-500 transition-all duration-200 hover:border-cyan-400/30 hover:bg-cyan-400/[0.04] hover:text-cyan-300"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add task
+                      </button>
                     </div>
                   )}
                 </Droppable>
@@ -258,6 +359,199 @@ export default function TaskerTasks() {
           </div>
         </DragDropContext>
       )}
+
+      {/* Task Modal Overlay */}
+      {modal.open && (
+        <TaskFormModal
+          open={modal.open}
+          mode={modal.mode}
+          initialStatus={modal.status}
+          task={modal.task}
+          onClose={closeModal}
+          onSubmit={handleModalSubmit}
+          isSaving={isSaving}
+        />
+      )}
+    </div>
+  )
+}
+
+function TaskFormModal({ open, mode, initialStatus, task, onClose, onSubmit, isSaving }) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [status, setStatus] = useState('todo')
+  const [priority, setPriority] = useState('Medium')
+  const [dueDate, setDueDate] = useState('')
+
+  useEffect(() => {
+    if (!open) return
+    if (mode === 'edit' && task) {
+      setTitle(task.title ?? '')
+      setDescription(task.description ?? '')
+      setStatus(task.status ?? 'todo')
+      setPriority(task.priority ?? 'Medium')
+      setDueDate(task.due_date ?? '')
+    } else {
+      setTitle('')
+      setDescription('')
+      setStatus(initialStatus ?? 'todo')
+      setPriority('Medium')
+      setDueDate('')
+    }
+  }, [open, mode, task, initialStatus])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    onSubmit({
+      title: title.trim(),
+      description: description.trim() || null,
+      status,
+      priority,
+      due_date: dueDate || null,
+    })
+  }
+
+  const priorityOptions = [
+    { value: 'High', label: 'High', icon: <Flag className="h-4 w-4 text-cyan-400" /> },
+    { value: 'Medium', label: 'Medium', icon: <Flag className="h-4 w-4 text-violet-400" /> },
+    { value: 'Low', label: 'Low', icon: <Flag className="h-4 w-4 text-zinc-500" /> },
+  ]
+
+  const statusOptions = [
+    { value: 'todo', label: 'To Do', icon: <span className="h-2.5 w-2.5 rounded-full bg-zinc-500" /> },
+    { value: 'inProgress', label: 'In Progress', icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-400" /> },
+    { value: 'completed', label: 'Completed', icon: <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" /> },
+  ]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-label="Close modal"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`relative w-full max-w-md ${glassCard} p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]`}
+      >
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-400/80">
+              {mode === 'edit' ? 'Edit task' : 'New task'}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-white">
+              {mode === 'edit' ? 'Update details' : 'Add to board'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-white"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Title
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What needs to be done?"
+              className={inputClass}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Optional details…"
+              className={`${inputClass} resize-none`}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Status
+              </label>
+              <CustomSelect
+                value={status}
+                onChange={setStatus}
+                options={statusOptions}
+                disabled={isSaving}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+                Priority
+              </label>
+              <CustomSelect
+                value={priority}
+                onChange={setPriority}
+                options={priorityOptions}
+                disabled={isSaving}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Due date
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className={inputClass}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="submit"
+              disabled={isSaving || !title.trim()}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-cyan-300 py-2.5 text-sm font-semibold text-[#041014] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : mode === 'edit' ? (
+                'Save changes'
+              ) : (
+                'Create task'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm text-zinc-400 hover:bg-white/[0.04]"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

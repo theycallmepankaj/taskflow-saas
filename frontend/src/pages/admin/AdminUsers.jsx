@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../api'
+import CustomSelect from '../../components/ui/CustomSelect'
 
 const glassCard =
   'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_32px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md'
@@ -334,15 +335,15 @@ export default function AdminUsers() {
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
                   Role
                 </label>
-                <select
+                <CustomSelect
                   value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className={`${inputClass} bg-[#09090e]`}
+                  onChange={setRole}
+                  options={[
+                    { value: 'tasker', label: 'Tasker', icon: <Users className="h-4 w-4 text-cyan-350" /> },
+                    { value: 'admin', label: 'Admin', icon: <Shield className="h-4 w-4 text-violet-350" /> },
+                  ]}
                   disabled={isSaving}
-                >
-                  <option value="tasker">Tasker</option>
-                  <option value="admin">Admin</option>
-                </select>
+                />
               </div>
 
               <div className="flex gap-2 pt-2">
